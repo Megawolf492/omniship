@@ -1,4 +1,5 @@
-[![Gem Version](https://badge.fury.io/rb/omniship.png)](http://badge.fury.io/rb/omniship) [![Code Climate](https://codeclimate.com/github/Digi-Cazter/omniship.png)](https://codeclimate.com/github/Digi-Cazter/omniship) [![Build Status](https://travis-ci.org/Digi-Cazter/omniship.svg)](https://travis-ci.org/Digi-Cazter/omniship)
+
+Update 2/1/2017 - I have forked this repository and have used edited for my purposes. I cannot guarantee anything will work.
 
 # Omniship
 

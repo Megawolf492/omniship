@@ -206,7 +206,7 @@ module Omniship
               build_location_node(["Origin"], origin, xml)
             end
             xml.ShippingChargesPayment {
-              xml.PaymentType "SENDER"
+              xml.PaymentType options[:receiver_pays] ? "RECIPIENT" : "SENDER"
               xml.Payor {
                 xml.ResponsibleParty {
                   xml.AccountNumber @options[:account]

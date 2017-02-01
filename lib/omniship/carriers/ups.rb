@@ -219,12 +219,24 @@ module Omniship
               build_location_node(['ShipFrom'], origin, options, xml)
             end
             xml.PaymentInformation {
-              xml.Prepaid {
-                xml.BillShipper {
-                  xml.AccountNumber options[:origin_account]
+              if options[:destination_account].present?
+                xml.FreightCollect {
+                  xml.BillReceiver {
+                    xml.AccountNumber options[:destination_account]
+                    xml.Address {
+                      xml.PostalCode destination.zip
+                    }
+                  }
                 }
-              }
+              else
+                xml.Prepaid {
+                  xml.BillShipper {
+                    xml.AccountNumber options[:origin_account]
+                  }
+                }
+              end
             }
+
             if options[:return_service_code].present?
               xml.ReturnService {
                 xml.Code options[:return_service_code]

@@ -106,9 +106,17 @@ module Omniship
       options        = @options.merge(options)
       options[:test] = options[:test].nil? ? true : options[:test]
       packages       = Array(packages)
-      ship_request   = build_ship_request(origin, destination, packages, options)
-      response       = commit(save_request(ship_request.gsub("\n", "")), options[:test])
-      parse_ship_response(response, options)
+      options[:package_count] = packages.count
+      options[:sequence_number] = Time.zone.now.to_i
+      responses = []
+      packages.each_with_index do |package, index|
+        options[:package_number] = index + 1
+        ship_request   = build_ship_request(origin, destination, package, options)
+        response       = commit(save_request(ship_request.gsub("\n", "")), options[:test])
+        responses << parse_ship_response(response, options)
+        options[:master_tracking_id] = responses[0].tracking_number
+      end
+      responses
     end
 
     def delete_shipment(tracking_number, shipment_type, options={})
@@ -126,7 +134,7 @@ module Omniship
     end
 
     protected
-    def build_rate_request(origin, destination, packages, options={})
+    def build_rate_request(origin, destination, package, options={})
       imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
 
       builder = Nokogiri::XML::Builder.new do |xml|
@@ -150,40 +158,38 @@ module Omniship
               build_location_node(['Origin'], origin, xml)
             end
             xml.RateRequestTypes 'ACCOUNT'
-            xml.PackageCount packages.size
-            packages.each do |pkg|
-              xml.RequestedPackageLineItems {
-                xml.SequenceNumber 1
-                xml.GroupPackageCount 1
-                xml.Weight {
-                  xml.Units (imperial ? 'LB' : 'KG')
-                  xml.Value ((imperial ? pkg.weight : pkg.weight/2.2).to_f)
-                }
-                xml.SpecialServicesRequested {
-                  if options[:without_signature]
-                    xml.SpecialServiceTypes "SIGNATURE_OPTION"
-                    xml.SignatureOptionDetail {
-                      xml.OptionType "NO_SIGNATURE_REQUIRED"
-                    }
-                  end
-                }
-                # xml.Dimensions {
-                #   [:length, :width, :height].each do |axis|
-                #     name  = axis.to_s.capitalize
-                #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
-                #     xml.name value
-                #   end
-                #   xml.Units (imperial ? 'IN' : 'CM')
-                # }
+            xml.PackageCount 1
+            xml.RequestedPackageLineItems {
+              xml.SequenceNumber 1
+              xml.GroupPackageCount 1
+              xml.Weight {
+                xml.Units (imperial ? 'LB' : 'KG')
+                xml.Value ((imperial ? pkg.weight : pkg.weight/2.20462).to_f)
               }
-            end
+              xml.SpecialServicesRequested {
+                if options[:without_signature]
+                  xml.SpecialServiceTypes "SIGNATURE_OPTION"
+                  xml.SignatureOptionDetail {
+                    xml.OptionType "NO_SIGNATURE_REQUIRED"
+                  }
+                end
+              }
+              # xml.Dimensions {
+              #   [:length, :width, :height].each do |axis|
+              #     name  = axis.to_s.capitalize
+              #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
+              #     xml.name value
+              #   end
+              #   xml.Units (imperial ? 'IN' : 'CM')
+              # }
+            }
           }
         }
       end
       builder.to_xml
     end
 
-    def build_ship_request(origin, destination, packages, options={})
+    def build_ship_request(origin, destination, package, options={})
       imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
 
       builder = Nokogiri::XML::Builder.new do |xml|
@@ -230,30 +236,6 @@ module Omniship
               xml.LabelStockType 'PAPER_7X4.75'
             }
             xml.RateRequestTypes 'ACCOUNT'
-            xml.PackageCount packages.size
-            packages.each do |pkg|
-              xml.RequestedPackageLineItems {
-                xml.SequenceNumber 1
-                xml.Weight {
-                  xml.Units (imperial ? 'LB' : 'KG')
-                  xml.Value ((imperial ? pkg.weight : pkg.weight/2.2).to_f)
-                }
-                xml.SpecialServicesRequested {
-                  if options[:without_signature]
-                    xml.SpecialServiceTypes "SIGNATURE_OPTION"
-                    xml.SignatureOptionDetail {
-                      xml.OptionType "NO_SIGNATURE_REQUIRED"
-                    }
-                  end
-                }
-                # xml.Dimensions {
-                #   [:length, :width, :height].each do |axis|
-                #     name  = axis.to_s.capitalize
-                #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
-                #     xml.send name, value.to_s
-                #   end
-                #   xml.Units (imperial ? 'IN' : 'CM')
-                # }
               }
             end
 
@@ -487,7 +469,6 @@ module Omniship
     end
 
     def response_message(xml)
-      "#{xml.xpath('//Notifications/Severity').text} - #{xml.xpath('//Notifications/Code').text}: #{xml.xpath('//Notifications/Message').text}"
     end
 
     def commit(request, test = false)

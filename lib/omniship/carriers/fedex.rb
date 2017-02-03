@@ -229,11 +229,10 @@ module Omniship
                 }
               end
             }
-            # TODO: Add options to change the label specifications
             xml.LabelSpecification {
               xml.LabelFormatType 'COMMON2D'
-              xml.ImageType 'PDF'
-              xml.LabelStockType 'PAPER_7X4.75'
+              xml.ImageType 'PNG'
+              xml.LabelStockType 'PAPER_4X8'
             }
             xml.RateRequestTypes 'ACCOUNT'
             if options[:master_tracking_id].present?

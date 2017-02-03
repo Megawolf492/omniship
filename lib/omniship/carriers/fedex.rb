@@ -236,8 +236,37 @@ module Omniship
               xml.LabelStockType 'PAPER_7X4.75'
             }
             xml.RateRequestTypes 'ACCOUNT'
+            if options[:master_tracking_id].present?
+              xml.MasterTrackingId {
+                xml.TrackingIdType "FEDEX"
+                xml.TrackingNumber options[:master_tracking_id]
               }
             end
+            xml.PackageCount options[:package_count]
+            xml.RequestedPackageLineItems {
+              xml.SequenceNumber options[:package_number]
+
+              xml.Weight {
+                xml.Units (imperial ? 'LB' : 'KG')
+                xml.Value ((imperial ? package.weight.to_pounds : package.weight.to_kilograms).to_f)
+              }
+              xml.SpecialServicesRequested {
+                if options[:without_signature]
+                  xml.SpecialServiceTypes "SIGNATURE_OPTION"
+                  xml.SignatureOptionDetail {
+                    xml.OptionType "NO_SIGNATURE_REQUIRED"
+                  }
+                end
+              }
+              # xml.Dimensions {
+              #   [:length, :width, :height].each do |axis|
+              #     name  = axis.to_s.capitalize
+              #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
+              #     xml.send name, value.to_s
+              #   end
+              #   xml.Units (imperial ? 'IN' : 'CM')
+              # }
+            }
 
             if !!@options[:notifications]
               xml.SpecialServicesRequested {
@@ -350,7 +379,7 @@ module Omniship
             xml.StateOrProvinceCode location.state
             xml.PostalCode location.postal_code
             xml.CountryCode location.country_code(:alpha2)
-            xml.Residential true unless location.commercial?
+            xml.Residential false unless location.residential?
           }
         }
       end
@@ -394,7 +423,7 @@ module Omniship
 
       if success
         label           = xml.xpath("//Image").text
-        tracking_number = xml.xpath("//TrackingNumber").text
+        tracking_number = xml.xpath("//TrackingNumber").first.text
       else
         success = false
         message = "Shipment was not succcessful." if message.blank?
@@ -469,6 +498,11 @@ module Omniship
     end
 
     def response_message(xml)
+      if xml.xpath('//Notifications/Severity').count > 0
+        "#{xml.xpath('//Notifications/Severity').text} - #{xml.xpath('//Notifications/Code').text}: #{xml.xpath('//Notifications/Message').text}"
+      else
+        "#{xml.xpath('//cause').text} - #{xml.xpath('//code').text}: #{xml.xpath('//Fault').text}"
+      end
     end
 
     def commit(request, test = false)

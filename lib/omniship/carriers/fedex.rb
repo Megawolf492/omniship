@@ -215,7 +215,7 @@ module Omniship
               xml.PaymentType options[:receiver_pays] ? "RECIPIENT" : "SENDER"
               xml.Payor {
                 xml.ResponsibleParty {
-                  xml.AccountNumber @options[:account]
+                  xml.AccountNumber options[:receiver_account]
                   xml.Contact nil
                 }
               }

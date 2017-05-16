@@ -213,6 +213,12 @@ module Omniship
             xml.RequestOption options[:nonvalidate] ? 'nonvalidate' : 'validate'
           }
           xml.Shipment {
+            xml.Description "Uniforms, Clothing, and/or Apparel"
+            if destination.country_code.in?(['CA', 'PR'])#Canada, Puerto Rico
+              xml.InvoiceLineTotal {
+                xml.MonetaryValue packages.sum(&:value)
+              }
+            end
             build_location_node(['Shipper'], (options[:shipper] || origin), options, xml)
             build_location_node(['ShipTo'], destination, options, xml)
             if options[:shipper] && options[:shipper] != origin

@@ -22,7 +22,7 @@ This library has been created to make web requests to common shipping carriers u
   - Void Shipment
   - Get Rates
   - Shipment Tracking
-* [USPS](http://www.usps.com) COMING SOON!
+* [USPS](http://www.usps.com) Works via Endicia
 
 ## Simple example snippets
 ### UPS Code Example ###

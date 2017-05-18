@@ -97,9 +97,9 @@ module Omniship
       options        = @options.merge(options)
       options[:test] = options[:test].nil? ? true : options[:test]
       packages       = Array(packages)
-      rate_request   = build_rate_request(origin, destination, packages, options)
+      rate_request   = build_rate_request(origin, destination, packages[0], options)
       response       = commit(save_request(rate_request.gsub("\n", "")), options[:test])
-      parse_rate_response(origin, destination, packages, response, options)
+      parse_rate_response(origin, destination, packages[0], response, options)
     end
 
     def create_shipment(origin, destination, packages, options={})
@@ -164,7 +164,7 @@ module Omniship
               xml.GroupPackageCount 1
               xml.Weight {
                 xml.Units (imperial ? 'LB' : 'KG')
-                xml.Value ((imperial ? pkg.weight : pkg.weight/2.20462).to_f)
+                xml.Value ((imperial ? package.weight : package.weight/2.20462).to_f)
               }
               xml.SpecialServicesRequested {
                 if options[:without_signature]
@@ -177,7 +177,7 @@ module Omniship
               # xml.Dimensions {
               #   [:length, :width, :height].each do |axis|
               #     name  = axis.to_s.capitalize
-              #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
+              #     value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0
               #     xml.name value
               #   end
               #   xml.Units (imperial ? 'IN' : 'CM')
@@ -260,7 +260,7 @@ module Omniship
               # xml.Dimensions {
               #   [:length, :width, :height].each do |axis|
               #     name  = axis.to_s.capitalize
-              #     value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0
+              #     value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0
               #     xml.send name, value.to_s
               #   end
               #   xml.Units (imperial ? 'IN' : 'CM')

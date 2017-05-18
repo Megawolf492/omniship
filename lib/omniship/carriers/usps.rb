@@ -53,7 +53,8 @@ module Omniship
     def get_postage_label(origin, destination, package, options={})
       options = @options.merge(options)
       options[:test] ||= true
-      options[:label_type] ||= "Default"
+      options[:label_type] ||= destination.country_code == 'US' ? "Default" : "International"
+      options[:label_subtype] ||= destination.country_code == 'US' ? nil : "Integrated"
       options[:label_size] ||= "4x6"
       options[:image_format] ||= "PNG"
       options[:image_resolution] ||= "600"
@@ -64,7 +65,7 @@ module Omniship
       client = Savon.client(wsdl: DOMAINS[options[:test]])
       response = client.call :get_postage_label, xml: xml
 
-      parse_get_postage_label_response(response.http.body)
+      parse_get_postage_label_response(response.http.body, options)
     end
 
     def get_refund(shipment_id, options = {})
@@ -263,9 +264,9 @@ module Omniship
                                     "xmlns:soap" => "http://schemas.xmlsoap.org/soap/envelope/") {
             xml.send("soap:Body") {
               xml.GetPostageLabel(xmlns: "www.envmgr.com/LabelService") {
-                xml.LabelRequest(Test: (options[:test] ? 'YES' : 'NO'), LabelType: options[:label_type], LabelSize: options[:label_size],
-                                 ImageFormat: options[:image_format], ImageResolution: options[:image_resolution],
-                                 ImageRotation: options[:image_rotation]){
+                xml.LabelRequest(Test: (options[:test] ? 'YES' : 'NO'), LabelType: options[:label_type], LabelSubtype: options[:label_subtype],
+                                 LabelSize: options[:label_size], ImageFormat: options[:image_format],
+                                 ImageResolution: options[:image_resolution], ImageRotation: options[:image_rotation]){
                   xml.RequesterID options[:test] ? 'lxxx' : options[:requester_id]
                   if options[:token].present?
                     xml.Token options[:token]
@@ -274,8 +275,24 @@ module Omniship
                     xml.PassPhrase options[:passphrase]
                   end
                   xml.MailClass options[:service]
-                  value = (package.oz.to_f*1000).round/1000.0 # decimals
-                  xml.WeightOz [value, 0.1].max
+                  unless destination.country_code == 'US'
+                    xml.CustomsCertify "TRUE"
+                    xml.CustomsSigner "Bryan Killian" ##Maybe change...???
+                    xml.CustomsSendersCopy "FALSE"
+                    xml.CustomsInfo {
+                      xml.ContentsType "Merchandise"
+                      xml.CustomsItems {
+                        xml.CustomsItem {
+                          xml.Description "Uniforms and/or Apparel"
+                          xml.Quantity 1
+                          xml.Weight package.oz
+                          xml.Value package.value / 100
+                          xml.CountryOfOrigin 'US'
+                        }
+                      }
+                    }
+                  end
+                  xml.WeightOz package.oz
                   xml.MailpieceShape package.options[:package_type]
                   xml.MailpieceDimensions {
                     xml.Length package.inches(:length)
@@ -313,14 +330,22 @@ module Omniship
         builder.to_xml
       end
 
-      def parse_get_postage_label_response(response)
+      def parse_get_postage_label_response(response, options = {})
         xml = Nokogiri::XML(response)
         xml.remove_namespaces!
         response_hash = {}
         response_hash[:response_code] = xml.xpath('//Status').text
         if successful_response?(xml)
           response_hash[:success] = true
-          response_hash[:label] = xml.xpath('//Base64LabelImage').text
+          if options[:label_subtype].present?
+            label = ""
+            xml.xpath("//Image").each do |image|
+              label << image
+            end
+            response_hash[:label] = label
+          else
+            response_hash[:label] = xml.xpath('//Base64LabelImage').text
+          end
           response_hash[:shipment_id] = xml.xpath('//TrackingNumber').text
           response_hash[:charges] = xml.xpath('//FinalPostage').text
         else

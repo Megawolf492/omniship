@@ -164,7 +164,7 @@ module Omniship
               xml.GroupPackageCount 1
               xml.Weight {
                 xml.Units (imperial ? 'LB' : 'KG')
-                xml.Value ((imperial ? package.weight : package.weight/2.20462).to_f)
+                xml.Value (imperial ? package.pounds : package.kilograms)
               }
               xml.SpecialServicesRequested {
                 if options[:without_signature]
@@ -228,6 +228,39 @@ module Omniship
                   xml.ReturnType "PRINT_RETURN_LABEL"
                 }
               end
+            }
+            xml.CustomsClearanceDetail {
+              xml.DutiesPayment {
+                xml.PaymentType options[:receiver_pays] ? "RECIPIENT" : "SENDER"
+                xml.Payor {
+                  xml.ResponsibleParty {
+                    xml.AccountNumber options[:receiver_account] || @options[:account]
+                    xml.Contact {
+                      xml.PersonName origin.name
+                    }
+                  }
+                }
+              }
+              xml.CustomsValue {
+                xml.Currency "USD"
+                xml.Amount package.value
+              }
+              xml.Commodities {
+                xml.Name "Uniforms & Apparel"
+                xml.NumberOfPieces "1"
+                xml.Description "Uniforms and/or Apparel Products"
+                xml.CountryOfManufacture "US"
+                xml.Weight {
+                  xml.Units "LB"
+                  xml.Value package.pounds
+                }
+                xml.Quantity "1"
+                xml.QuantityUnits "EA"
+                xml.UnitPrice {
+                  xml.Currency "USD"
+                  xml.Amount package.value
+                }
+              }
             }
             xml.LabelSpecification {
               xml.LabelFormatType 'COMMON2D'

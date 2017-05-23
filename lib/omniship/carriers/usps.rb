@@ -204,8 +204,7 @@ module Omniship
                     end
                   }
                   xml.MailClass destination.country_code == 'US' ? "Domestic" : "International"
-                  value = (package.oz.to_f*1000).round/1000.0 # decimals
-                  xml.WeightOz [value, 0.1].max
+                  xml.WeightOz package.oz.round
                   xml.MailpieceShape "Parcel"
                   xml.MailpieceDimensions {
                     xml.Length package.inches(:length)
@@ -229,10 +228,14 @@ module Omniship
         xml.remove_namespaces!
         response_hash = {}
         response_hash[:response_code] = xml.xpath('//Status').text
-        if successful_response?(xml)
+
+        success = successful_response?(xml)
+        message = xml.xpath("//ErrorMessage").text
+        rate_estimates = []
+
+        if success
           response_hash[:success] = true
 
-          rate_estimates = []
           xml.xpath('//PostagePrice').each do |rated_shipment|
             service_code = rated_shipment.xpath('MailClass')[0].text
             service_name = rated_shipment.xpath('*/MailService')[0].text
@@ -244,9 +247,9 @@ module Omniship
           end
           response_hash[:rates] = rate_estimates
         else
-          response_hash[:error_description] = xml.xpath("//ErrorMessage").text
+          response_hash[:error_description] = message
         end
-        response_hash
+        RateResponse.new(success, message, Hash.from_xml(response).values.first, rates: rate_estimates, xml: response)
       end
 
 
@@ -285,14 +288,14 @@ module Omniship
                         xml.CustomsItem {
                           xml.Description "Uniforms and/or Apparel"
                           xml.Quantity 1
-                          xml.Weight package.oz
+                          xml.Weight package.oz.round
                           xml.Value package.value / 100
                           xml.CountryOfOrigin 'US'
                         }
                       }
                     }
                   end
-                  xml.WeightOz package.oz
+                  xml.WeightOz package.oz.round
                   xml.MailpieceShape package.options[:package_type]
                   xml.MailpieceDimensions {
                     xml.Length package.inches(:length)

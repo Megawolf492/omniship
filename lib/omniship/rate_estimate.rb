@@ -9,7 +9,7 @@ module Omniship #:nodoc:
     attr_reader :currency       # 'USD', 'CAD', etc.
                                 # http://en.wikipedia.org/wiki/ISO_4217
     attr_reader :delivery_date  # Usually only available for express shipments
-    attr_reader :delivery_range # Min and max delivery estimate in days
+    attr_reader :delivery_days # Min and max delivery estimate in days
 
     def initialize(origin, destination, carrier, options={})
       @origin, @destination, @carrier = origin, destination, carrier
@@ -22,7 +22,7 @@ module Omniship #:nodoc:
       end
       @total_price = options[:total_price]
       @currency = options[:currency]
-      @delivery_range = options[:delivery_range] ? options[:delivery_range].map { |date| date_for(date) }.compact : []
+      @delivery_days = options[:delivery_days] ? options[:delivery_days] : nil
       @delivery_date = options[:delivery_date]
     end
 

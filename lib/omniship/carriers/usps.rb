@@ -211,6 +211,8 @@ module Omniship
                     xml.Width package.inches(:width)
                     xml.Height package.inches(:height)
                   }
+                  xml.DeliveryTimeDays true
+                  xml.EstimatedDeliveryDate true
                   xml.FromCountryCode origin.country_code
                   xml.FromPostalCode origin.zip
                   xml.ToPostalCode destination.zip
@@ -239,11 +241,14 @@ module Omniship
           xml.xpath('//PostagePrice').each do |rated_shipment|
             service_code = rated_shipment.xpath('MailClass')[0].text
             service_name = rated_shipment.xpath('*/MailService')[0].text
+            date = DateTime.strptime(rated_shipment.xpath("EstimatedDeliveryDate").text, "%m/%d/%Y") rescue nil
+            days = (date - DateTime.now).to_i + 1 rescue nil
 
             rate_estimates << RateEstimate.new(nil, nil, "USPS",
                                                service_code: service_code,
                                                service_name: service_name,
-                                               total_price: rated_shipment['TotalAmount'].to_f)
+                                               total_price: rated_shipment['TotalAmount'].to_f,
+                                               delivery_days: days)
           end
           response_hash[:rates] = rate_estimates
         else

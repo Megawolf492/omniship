@@ -391,7 +391,7 @@ module Omniship
         xml.RatingServiceSelectionRequest {
           xml.Request {
             xml.RequestAction 'Rate'
-            xml.RequestOption 'Shop'
+            xml.RequestOption 'Shoptimeintransit'
           }
           # not implemented: 'Rate' RequestOption to specify a single service query
           # request << XmlNode.new('RequestOption', ((options[:service].nil? or options[:service] == :all) ? 'Shop' : 'Rate'))
@@ -410,6 +410,9 @@ module Omniship
             if options[:shipper] && options[:shipper] != origin
               build_location_node(['ShipFrom'], origin, options, xml)
             end
+            xml.DeliveryTimeInformation {
+              xml.PackageBillType "03"
+            }
 
             # not implemented:  * Shipment/ShipmentWeight element
             #                   * Shipment/ReferenceNumber element
@@ -520,8 +523,7 @@ module Omniship
 
         xml.xpath('/*/RatedShipment').each do |rated_shipment|
           service_code = rated_shipment.xpath('Service/Code').text.to_s
-          days_to_delivery = rated_shipment.xpath('GuaranteedDaysToDelivery').text.to_s.to_i
-          delivery_date = days_to_delivery >= 1 ? days_to_delivery.days.from_now.strftime("%Y-%m-%d") : nil
+          delivery_date = DateTime.parse(rated_shipment.xpath('TimeInTransit/ServiceSummary/EstimatedArrival/Arrival/Date').text)
 
           rate_estimates << RateEstimate.new(origin, destination, @@name,
                                              :service_code => service_code,
@@ -529,7 +531,7 @@ module Omniship
                                              :total_price => rated_shipment.xpath('TotalCharges/MonetaryValue').text.to_s.to_f,
                                              :currency => rated_shipment.xpath('TotalCharges/CurrencyCode').text.to_s,
                                              :packages => packages,
-                                             :delivery_range => [delivery_date])
+                                             :delivery_days => ((delivery_date - DateTime.now).to_i + 1))
         end
       end
       RateResponse.new(success, message, Hash.from_xml(response).values.first, :rates => rate_estimates, :xml => response, :request => last_request)

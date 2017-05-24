@@ -82,6 +82,30 @@ module Omniship
       'express_mps_master'        => 'EXPRESS_MPS_MASTER'
     }
 
+    TransitTime = {
+      'ONE_DAY' => 1,
+      'TWO_DAYS' => 2,
+      'THREE_DAYS' => 3,
+      'FOUR_DAYS' => 4,
+      'FIVE_DAYS' => 5,
+      'SIX_DAYS' => 6,
+      'SEVEN_DAYS' => 7,
+      'EIGHT_DAYS' => 8,
+      'NINE_DAYS' => 9,
+      'TEN_DAYS' => 10,
+      'ELEVEN_DAYS' => 11,
+      'TWELVE_DAYS' => 12,
+      'THIRTEEN_DAYS' => 13,
+      'FOURTEEN_DAYS' => 14,
+      'FIFTEEN_DAYS' => 15,
+      'SIXTEEN_DAYS' => 16,
+      'SEVENTEEN_DAYS' => 17,
+      'EIGHTEEN_DAYS' => 18,
+      'NINETEEN_DAYS' => 19,
+      'TWENTY_DAYS' => 20,
+      'UNKNOWN' => 100,
+    }
+
     def self.service_name_for_code(service_code)
       ServiceTypes[service_code] || begin
         name = service_code.downcase.split('_').collect{|word| word.capitalize }.join(' ')
@@ -427,13 +451,14 @@ module Omniship
       message = response_message(xml)
 
       xml.xpath('//RateReplyDetails').each do |rate|
+        delivery_date = rate.xpath('ServiceType').text == "FEDEX_GROUND" ? TransitTime[rate.xpath('TransitTime').text].days.from_now.to_datetime : DateTime.parse(rate.xpath('DeliveryTimestamp').text)
         rate_estimates << RateEstimate.new(origin, destination, @@name,
                           :service_code     => rate.xpath('ServiceType').text,
                           :service_name     => rate.xpath('AppliedOptions').text == "SATURDAY_DELIVERY" ? "#{self.class.service_name_for_code(rate.xpath('ServiceType').text + '_SATURDAY_DELIVERY')}".upcase : self.class.service_name_for_code(rate.xpath('ServiceType').text),
                           :total_price      => rate.xpath('RatedShipmentDetails').first.xpath('ShipmentRateDetail/TotalNetCharge/Amount').text.to_f,
                           :currency         => handle_uk_currency(rate.xpath('RatedShipmentDetails').first.xpath('ShipmentRateDetail/TotalNetCharge/Currency').text),
                           :packages         => packages,
-                          :delivery_date    => rate.xpath('ServiceType').text == "FEDEX_GROUND" ? rate.xpath('TransitTime').text : rate.xpath('DeliveryTimestamp').text
+                          :delivery_days    => ((delivery_date - DateTime.now).to_i + 1)
                           )
       end
 

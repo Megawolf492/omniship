@@ -405,6 +405,7 @@ module Omniship
             xml.Code CUSTOMER_CLASSIFICATIONS[cc]
           }
           xml.Shipment {
+            imperial = ['US', 'LR', 'MM'].include?(origin.country_code(:alpha2))
             build_location_node(['Shipper'], (options[:shipper] || origin), options, xml)
             build_location_node(['ShipTo'], destination, options, xml)
             if options[:shipper] && options[:shipper] != origin
@@ -412,6 +413,15 @@ module Omniship
             end
             xml.DeliveryTimeInformation {
               xml.PackageBillType "03"
+            }
+            xml.ShipmentTotalWeight {
+              xml.UnitOfMeasurement {
+                xml.Code imperial ? 'LBS' : 'KGS'
+              }
+              xml.Weight packages.sum{|p| ((imperial ? p.lbs : p.kgs).to_f*1000).round/1000.0}
+            }
+            xml.InvoiceLineTotal {
+              xml.MonetaryValue packages.count
             }
 
             # not implemented:  * Shipment/ShipmentWeight element
@@ -424,7 +434,6 @@ module Omniship
             #                   * Shipment/DocumentsOnly element
 
             packages.each do |package|
-              imperial = ['US', 'LR', 'MM'].include?(origin.country_code(:alpha2))
               xml.Package {
                 xml.PackagingType {
                   xml.Code '02'

@@ -421,6 +421,7 @@ module Omniship
               xml.Weight packages.sum{|p| ((imperial ? p.lbs : p.kgs).to_f*1000).round/1000.0}
             }
             xml.InvoiceLineTotal {
+              xml.CurrencyCode "USD"
               xml.MonetaryValue packages.count
             }
 

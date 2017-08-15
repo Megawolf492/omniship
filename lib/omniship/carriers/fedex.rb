@@ -490,9 +490,10 @@ module Omniship
 
     def parse_delete_response(response, options={})
       xml     = Nokogiri::XML(response).remove_namespaces!
-      success = response_success?(xml)
-      message = response_message(xml)
-      return [success, message]
+      response = {}
+      response[:success] = response_success?(xml)
+      response[:message] = response_message(xml)
+      response
     end
 
     def parse_tracking_response(response, options)

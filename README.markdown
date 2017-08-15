@@ -1,5 +1,5 @@
 
-Update 2/1/2017 - I have forked this repository and have used edited for my purposes. I cannot guarantee anything will work.
+Update 2/1/2017 - I have forked this repository and have used edited for my purposes. I cannot guarantee my edits will work, but they work for me.
 
 # Omniship
 
@@ -22,7 +22,10 @@ This library has been created to make web requests to common shipping carriers u
   - Void Shipment
   - Get Rates
   - Shipment Tracking
-* [USPS](http://www.usps.com) Works via Endicia
+* [USPS](http://www.usps.com) Works via XPS Shipper
+  - Get Rates
+  - Create Shipment
+  - Void Shipment
 
 ## Simple example snippets
 ### UPS Code Example ###

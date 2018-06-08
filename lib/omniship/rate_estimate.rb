@@ -21,6 +21,7 @@ module Omniship #:nodoc:
         @package_rates = Array(options[:packages]).map {|p| {:package => p}}
       end
       @total_price = options[:total_price]
+      @negotiated_price = options[:negotiated_price]
       @currency = options[:currency]
       @delivery_days = options[:delivery_days] ? options[:delivery_days] : nil
       @delivery_date = options[:delivery_date]
@@ -34,6 +35,10 @@ module Omniship #:nodoc:
       end
     end
     alias_method :price, :total_price
+
+    def negotiated_price
+      @negotiated_price
+    end
 
     def add(package,rate=nil)
       cents = Package.cents_from(rate)

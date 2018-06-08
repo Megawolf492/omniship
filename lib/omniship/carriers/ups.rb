@@ -467,6 +467,10 @@ module Omniship
                 #                   * Shipment/Package/AdditionalHandling element
               }
             end
+
+            xml.RateInformation{
+              xml.NegotiatedRatesIndicator ''
+            }
             # not implemented:  * Shipment/ShipmentServiceOptions element
             #                   * Shipment/RateInformation element
           }
@@ -539,6 +543,7 @@ module Omniship
                                              :service_code => service_code,
                                              :service_name => service_name_for(origin, service_code),
                                              :total_price => rated_shipment.xpath('TotalCharges/MonetaryValue').text.to_s.to_f,
+                                             :negotiated_price => rated_shipment.xpath('NegotiatedRates/NetSummaryCharges/GrandTotal/MonetaryValue').text.to_s.to_f,
                                              :currency => rated_shipment.xpath('TotalCharges/CurrencyCode').text.to_s,
                                              :packages => packages,
                                              :delivery_days => ((delivery_date - DateTime.now).to_i + 1))

@@ -12,9 +12,7 @@ module Omniship
 
       options[:services].each do |service_code, service_name|
         json = build_calculate_postage_rate_request(origin, destination, package, service_code, options)
-        response = HTTParty.post "https://xpsship.rocksolidinternet.com/restapi/v1/customers/#{@options[:customer_id]}/quote",
-                                 headers: {"Authorization" => "RSIS #{@options[:api_key]}", 'Content-Type' => 'application/json'},
-                                 body: json.to_json
+        response = HTTParty.post "https://xpsship.rocksolidinternet.com/restapi/v1/customers/#{@options[:customer_id]}/quote", headers: {"Authorization" => "RSIS #{@options[:api_key]}", 'Content-Type' => 'application/json'}, body: json.to_json
         res = JSON.parse(response.body)
 
         next unless res["totalAmount"].present?
@@ -38,8 +36,7 @@ module Omniship
 
       json = build_book_shipment_request(origin, destination, package, options)
 
-      response = HTTParty.post "https://xpsship.rocksolidinternet.com/restapi/v1/customers/#{@options[:customer_id]}/shipments",
-                               headers: {"Authorization" => "RSIS #{@options[:api_key]}", 'Content-Type' => 'application/json'},
+      response = HTTParty.post "https://xpsship.rocksolidinternet.com/restapi/v1/customers/12305679/shipments", headers: {"Authorization" => "RSIS #{@options[:api_key]}", 'Content-Type' => 'application/json'},
                                body: json.to_json
       res = JSON.parse(response.body)
 
